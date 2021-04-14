@@ -7,16 +7,19 @@ public enum ErrorCodes {
     permissionDefinitionsNotFound,
     permissionDenied,
     permissionRequestInProgress,
-    locationAvailabilityTrue,
-    locationAvailabilityFalse;
+    locationEnabledWithSignal,
+    locationEnabledWithoutSignal,
+    locationDisabled;
 
 
     public String toString() {
         switch (this) {
-            case locationAvailabilityTrue:
-                return "true";
-            case locationAvailabilityFalse:
-                return "false";
+            case locationDisabled:
+                return "DISABLED";
+            case locationEnabledWithSignal:
+                return "ENABLED_SIGNAL";
+            case locationEnabledWithoutSignal:
+                return "ENABLED_NO_SIGNAL";
             case activityNotSupplied:
                 return "ACTIVITY_NOT_SUPPLIED";
             case errorWhileAcquiringPosition:
@@ -36,10 +39,12 @@ public enum ErrorCodes {
 
     public String toDescription() {
         switch (this) {
-            case locationAvailabilityTrue:
-                return "true";
-            case locationAvailabilityFalse:
-                return "false";
+            case locationDisabled:
+                return "Location is disabled";
+            case locationEnabledWithSignal:
+                return "Location is enabled with signal";
+            case locationEnabledWithoutSignal:
+                return "Location is enabled but without signal";
             case activityNotSupplied:
                 return "Activity is missing. This might happen when running a certain function from the background that requires a UI element (e.g. requesting permissions or enabling the location services).";
             case errorWhileAcquiringPosition:
