@@ -1,3 +1,60 @@
+## 2.3.3
+
+- Migrated to [flutter_lints](https://pub.dev/packages/flutter_lints) as linter rule set as it replaces the deprecated [effective_dart](https://pub.dev/packages/effective_dart) package.
+
+## 2.3.2
+
+- Added the possibility to pass your own purposeKey name to the requestTemporaryFullAccuracy method.
+
+## 2.3.1
+
+- Solves a bug which resulted in an issue when closing the position stream.
+
+## 2.3.0
+
+- Added the possibility to request temporary Precise Accuracy on iOS 14+ devices.
+
+## 2.2.1
+
+- Documentation `getLocationAccuracy()` method clarified.
+- Extended the `LocationAccuracyStatus` enum with a `LocationAccuracyStatus.unknown` value, which can be used by platforms that don't support location accuracy features.
+
+## 2.2.0
+
+- Added the possibility to query for the LocationAccuracyStatus on devices running iOS 14.0 and higher.
+
+## 2.1.1
+
+- Solves a bug which resulted in an issue when closing the position stream and requesting a new one (see issue [#703](https://github.com/Baseflow/flutter-geolocator/issues/703)).
+
+## 2.1.0
+
+- Added the possibility to start a stream which will return an event when Location Services are manually enabled/disabled
+
+## 2.0.2
+
+- Added definition of the `ActivityMissingException`.
+
+## 2.0.1
+
+- Resolved analyzer error when using mockito (see issue [#709](https://github.com/Baseflow/flutter-geolocator/issues/709)).
+
+## 2.0.0
+
+- Stable release for null safety.
+
+## 2.0.0-nullsafety.1
+
+- Merged version 1.0.9 into null safety.
+
+## 2.0.0-nullsafety.0
+
+- Migrated to support null safety.
+
+## 1.0.9
+
+- Updated the README.md to more clearly explain the purpose of the geolocator_platform_interface package.
+
 ## 1.0.8
 
 - Added the optional floor property to the position model and can be used by implementations to specify the floor on which the device is located (see [#562](https://github.com/Baseflow/flutter-geolocator/issues/562)).

@@ -4,6 +4,7 @@ import 'package:async/async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
+import 'package:geolocator_platform_interface/src/enums/location_service.dart';
 import 'package:geolocator_platform_interface/src/implementations/method_channel_geolocator.dart';
 
 import 'event_channel_mock.dart';
@@ -134,6 +135,124 @@ void main() {
       });
     });
 
+    group(
+        'requestTemporaryFullAccuracy: When requesting temporary full'
+        'accuracy.', () {
+      test(
+          'Should receive reduced accuracy if Location Accuracy is pinned to'
+          ' reduced', () async {
+        // Arrange
+        final methodChannel = MethodChannelMock(
+            channelName: 'flutter.baseflow.com/geolocator',
+            method: 'requestTemporaryFullAccuracy',
+            result: 0);
+
+        final expectedArguments = <String, dynamic>{
+          'purposeKey': 'purposeKeyValue',
+        };
+
+        // Act
+        final accuracy =
+            await MethodChannelGeolocator().requestTemporaryFullAccuracy(
+          purposeKey: 'purposeKeyValue',
+        );
+
+        // Assert
+        expect(accuracy, LocationAccuracyStatus.reduced);
+
+        expect(methodChannel.log, <Matcher>[
+          isMethodCall(
+            'requestTemporaryFullAccuracy',
+            arguments: expectedArguments,
+          ),
+        ]);
+      });
+
+      test(
+          'Should receive reduced accuracy if Location Accuracy is already set'
+          ' to precise location accuracy', () async {
+        // Arrange
+        MethodChannelMock(
+            channelName: 'flutter.baseflow.com/geolocator',
+            method: 'requestTemporaryFullAccuracy',
+            result: 1);
+
+        // Act
+        final accuracy = await MethodChannelGeolocator()
+            .requestTemporaryFullAccuracy(purposeKey: 'purposeKey');
+
+        // Assert
+        expect(accuracy, LocationAccuracyStatus.precise);
+      });
+
+      test('Should receive an exception when permission definitions not found',
+          () async {
+        // Arrange
+        MethodChannelMock(
+          channelName: 'flutter.baseflow.com/geolocator',
+          method: 'requestTemporaryFullAccuracy',
+          result: PlatformException(
+            code: 'PERMISSION_DEFINITIONS_NOT_FOUND',
+            message: 'Permission definitions are not found.',
+            details: null,
+          ),
+        );
+
+        // Act
+        final future = MethodChannelGeolocator()
+            .requestTemporaryFullAccuracy(purposeKey: 'purposeKey');
+
+        // Assert
+        expect(
+          future,
+          throwsA(
+            isA<PermissionDefinitionsNotFoundException>().having(
+              (e) => e.message,
+              'description',
+              'Permission definitions are not found.',
+            ),
+          ),
+        );
+      });
+    });
+
+    group('getLocationAccuracy: When requesting the Location Accuracy Status',
+        () {
+      test('Should receive reduced accuracy if Location Accuracy is reduced',
+          () async {
+        // Arrange
+        MethodChannelMock(
+          channelName: 'flutter.baseflow.com/geolocator',
+          method: 'getLocationAccuracy',
+          result: 0,
+        );
+
+        // Act
+        final locationAccuracy =
+            await MethodChannelGeolocator().getLocationAccuracy();
+
+        // Assert
+        expect(locationAccuracy, LocationAccuracyStatus.reduced);
+      });
+
+      test('Should receive reduced accuracy if Location Accuracy is reduced',
+          () async {
+        // Arrange
+        MethodChannelMock(
+          channelName: 'flutter.baseflow.com/geolocator',
+          method: 'getLocationAccuracy',
+          result: 1,
+        );
+
+        // Act
+        final locationAccuracy =
+            await MethodChannelGeolocator().getLocationAccuracy();
+
+        // Assert
+        expect(locationAccuracy, LocationAccuracyStatus.precise);
+      });
+    });
+
     group('requestPermission: When requesting for permission', () {
       test(
           // ignore: lines_longer_than_80_chars
@@ -189,7 +308,7 @@ void main() {
         );
       });
 
-      test('Should receive deniedForEver if permission is denied for ever',
+      test('Should receive deniedForever if permission is denied for ever',
           () async {
         // Arrange
         MethodChannelMock(
@@ -260,6 +379,35 @@ void main() {
               (e) => e.message,
               'description',
               'Permission definitions are not found.',
+            ),
+          ),
+        );
+      });
+
+      test('Should receive an exception when android activity is missing',
+          () async {
+        // Arrange
+        MethodChannelMock(
+          channelName: 'flutter.baseflow.com/geolocator',
+          method: 'requestPermission',
+          result: PlatformException(
+            code: 'ACTIVITY_MISSING',
+            message: 'Activity is missing.',
+            details: null,
+          ),
+        );
+
+        // Act
+        final permissionFuture = MethodChannelGeolocator().requestPermission();
+
+        // Assert
+        expect(
+          permissionFuture,
+          throwsA(
+            isA<ActivityMissingException>().having(
+              (e) => e.message,
+              'description',
+              'Activity is missing.',
             ),
           ),
         );
@@ -373,7 +521,7 @@ void main() {
             channelName: 'flutter.baseflow.com/geolocator',
             method: 'getCurrentPosition',
             result: mockPosition.toJson());
-        final expectedArguments = LocationOptions(
+        const expectedArguments = LocationOptions(
           accuracy: LocationAccuracy.low,
         );
 
@@ -399,11 +547,11 @@ void main() {
           method: 'getCurrentPosition',
           result: mockPosition.toJson(),
         );
-        final expectedFirstArguments = LocationOptions(
+        const expectedFirstArguments = LocationOptions(
           accuracy: LocationAccuracy.low,
           forceAndroidLocationManager: false,
         );
-        final expectedSecondArguments = LocationOptions(
+        const expectedSecondArguments = LocationOptions(
           accuracy: LocationAccuracy.high,
           forceAndroidLocationManager: true,
         );
@@ -473,7 +621,7 @@ void main() {
           method: 'getCurrentPosition',
           result: PlatformException(
             code: 'LOCATION_SERVICES_DISABLED',
-            message: null,
+            message: '',
             details: null,
           ),
         );
@@ -493,7 +641,7 @@ void main() {
         // Arrange
         MethodChannelMock(
           channelName: 'flutter.baseflow.com/geolocator',
-          delay: Duration(milliseconds: 10),
+          delay: const Duration(milliseconds: 10),
           method: 'getCurrentPosition',
           result: mockPosition.toJson(),
         );
@@ -502,7 +650,7 @@ void main() {
           await MethodChannelGeolocator().getCurrentPosition(
             desiredAccuracy: LocationAccuracy.low,
             forceAndroidLocationManager: true,
-            timeLimit: Duration(milliseconds: 5),
+            timeLimit: const Duration(milliseconds: 5),
           );
 
           fail('Expected a TimeoutException and should not reach here.');
@@ -525,6 +673,89 @@ void main() {
             true,
           );
         });
+
+        test('Should return a new stream when all subscriptions are cancelled',
+            () {
+          final methodChannelGeolocator = MethodChannelGeolocator();
+
+          // Get two position streams
+          final firstStream = methodChannelGeolocator.getPositionStream();
+          final secondStream = methodChannelGeolocator.getPositionStream();
+
+          // Streams are the same object
+          expect(firstStream == secondStream, true);
+
+          // Add multiple subscriptions
+          StreamSubscription<Position>? firstSubscription =
+              firstStream.listen((event) {});
+          StreamSubscription<Position>? secondSubscription =
+              secondStream.listen((event) {});
+
+          // Cancel first subscription
+          firstSubscription.cancel();
+          firstSubscription = null;
+
+          // Stream is still the same as the first one
+          final cachedStream = methodChannelGeolocator.getPositionStream();
+          expect(firstStream == cachedStream, true);
+
+          // Cancel second subscription
+          secondSubscription.cancel();
+          secondSubscription = null;
+
+          // After all listeners have been removed, the next stream
+          // retrieved is a new one.
+          final thirdStream = methodChannelGeolocator.getPositionStream();
+          expect(firstStream != thirdStream, true);
+        });
+      });
+
+      test('PositionStream can be listened to and can be canceled', () {
+        // Arrange
+        final streamController =
+            StreamController<Map<String, dynamic>>.broadcast();
+        EventChannelMock(
+          channelName: 'flutter.baseflow.com/geolocator_updates',
+          stream: streamController.stream,
+        );
+
+        var stream = MethodChannelGeolocator().getPositionStream();
+        StreamSubscription<Position>? streamSubscription =
+            stream.listen((event) {});
+
+        streamSubscription.pause();
+        expect(streamSubscription.isPaused, true);
+        streamSubscription.resume();
+        expect(streamSubscription.isPaused, false);
+        streamSubscription.cancel();
+        streamSubscription = null;
+      });
+
+      test(
+          // ignore: lines_longer_than_80_chars
+          'Should correctly handle done event', () async {
+        // Arrange
+        final completer = Completer();
+        completer.future.timeout(const Duration(milliseconds: 50),
+            onTimeout: () =>
+                fail('getPositionStream should trigger done and not timeout.'));
+        final streamController =
+            StreamController<Map<String, dynamic>>.broadcast();
+        EventChannelMock(
+          channelName: 'flutter.baseflow.com/geolocator_updates',
+          stream: streamController.stream,
+        );
+
+        // Act
+        MethodChannelGeolocator().getPositionStream().listen(
+              (event) {},
+              onDone: completer.complete,
+            );
+
+        await streamController.close();
+
+        //Assert
+        await completer.future;
       });
 
       test(
@@ -737,7 +968,7 @@ void main() {
           channelName: 'flutter.baseflow.com/geolocator_updates',
           stream: streamController.stream,
         );
-        final expectedArguments = LocationOptions(
+        const expectedArguments = LocationOptions(
           accuracy: LocationAccuracy.low,
           distanceFilter: 0,
         );
@@ -745,16 +976,102 @@ void main() {
         // Act
         final positionStream = MethodChannelGeolocator().getPositionStream(
             desiredAccuracy: expectedArguments.accuracy,
-            timeLimit: Duration(milliseconds: 5));
+            timeLimit: const Duration(milliseconds: 5));
         final streamQueue = StreamQueue(positionStream);
 
         streamController.add(mockPosition.toJson());
 
-        await Future.delayed(Duration(milliseconds: 5));
+        await Future.delayed(const Duration(milliseconds: 5));
 
         // Assert
         expect(await streamQueue.next, mockPosition);
         expect(streamQueue.next, throwsA(isA<TimeoutException>()));
+      });
+    });
+
+    group(
+        // ignore: lines_longer_than_80_chars
+        'getServiceStream: When requesting a stream of location service status updates',
+        () {
+      group('And requesting for location service status updates multiple times',
+          () {
+        test('Should return the same stream', () {
+          final methodChannelGeolocator = MethodChannelGeolocator();
+          final firstStream = methodChannelGeolocator.getServiceStatusStream();
+          final secondstream = methodChannelGeolocator.getServiceStatusStream();
+
+          expect(
+            identical(firstStream, secondstream),
+            true,
+          );
+        });
+      });
+
+      test(
+          // ignore: lines_longer_than_80_chars
+          'Should receive a stream with location service updates if permissions are granted',
+          () async {
+        // Arrange
+        final streamController = StreamController<int>.broadcast();
+        EventChannelMock(
+            channelName: 'flutter.baseflow.com/geolocator_service_updates',
+            stream: streamController.stream);
+
+        // Act
+        final locationServiceStream =
+            MethodChannelGeolocator().getServiceStatusStream();
+        final streamQueue = StreamQueue(locationServiceStream);
+
+        // Emit test events
+        streamController.add(0); // disabled value in native enum
+        streamController.add(1); // enabled value in native enum
+
+        //Assert
+        expect(await streamQueue.next, ServiceStatus.disabled);
+        expect(await streamQueue.next, ServiceStatus.enabled);
+
+        // Clean up
+        await streamQueue.cancel();
+        await streamController.close();
+      });
+
+      test(
+          // ignore: lines_longer_than_80_chars
+          'Should receive an exception if android activity is missing',
+          () async {
+        // Arrange
+        final streamController =
+            StreamController<PlatformException>.broadcast();
+        EventChannelMock(
+          channelName: 'flutter.baseflow.com/geolocator_service_updates',
+          stream: streamController.stream,
+        );
+
+        // Act
+        final positionStream =
+            MethodChannelGeolocator().getServiceStatusStream();
+        final streamQueue = StreamQueue(positionStream);
+
+        // Emit test error
+        streamController.addError(PlatformException(
+            code: 'ACTIVITY_MISSING',
+            message: 'Activity missing',
+            details: null));
+
+        // Assert
+        expect(
+            streamQueue.next,
+            throwsA(
+              isA<ActivityMissingException>().having(
+                (e) => e.message,
+                'message',
+                'Activity missing',
+              ),
+            ));
+
+        // Clean up
+        streamQueue.cancel();
+        streamController.close();
       });
     });
 

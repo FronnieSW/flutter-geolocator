@@ -53,7 +53,31 @@ void main() {
       expect(position, mockPosition);
     });
 
-    test('getPositionStream', () async {
+    test('getLocationAccuracy', () async {
+      final accuracy = await Geolocator.getLocationAccuracy();
+
+      expect(accuracy, LocationAccuracyStatus.reduced);
+    });
+
+    test('requestTemporaryFullAccuracy', () async {
+      final accuracy = await Geolocator.requestTemporaryFullAccuracy(
+        purposeKey: "purposeKeyValue",
+      );
+
+      expect(accuracy, LocationAccuracyStatus.reduced);
+    });
+
+    test('getServiceStatusStream', () {
+      when(GeolocatorPlatform.instance.getServiceStatusStream())
+          .thenAnswer((_) => Stream.value(ServiceStatus.enabled));
+
+      final locationService = Geolocator.getServiceStatusStream();
+
+      expect(locationService,
+          emitsInOrder([emits(ServiceStatus.enabled), emitsDone]));
+    });
+
+    test('getPositionStream', () {
       when(GeolocatorPlatform.instance.getPositionStream(
         desiredAccuracy: LocationAccuracy.best,
         forceAndroidLocationManager: false,
@@ -61,17 +85,25 @@ void main() {
         timeLimit: null,
       )).thenAnswer((_) => Stream.value(mockPosition));
 
-      final position = await Geolocator.getPositionStream();
+      final position = Geolocator.getPositionStream();
 
       expect(position, emitsInOrder([emits(mockPosition), emitsDone]));
     });
 
     test('getPositionStream: time interval should be set to zero if left null.',
-        () async {
-      await Geolocator.getPositionStream(intervalDuration: null);
+        () {
+      when(GeolocatorPlatform.instance.getPositionStream(
+        desiredAccuracy: LocationAccuracy.best,
+        forceAndroidLocationManager: false,
+        timeInterval: 0,
+        timeLimit: null,
+      )).thenAnswer((_) => Stream.value(mockPosition));
+
+      Geolocator.getPositionStream(intervalDuration: null);
 
       verify(GeolocatorPlatform.instance.getPositionStream(
         desiredAccuracy: LocationAccuracy.best,
+        distanceFilter: 0,
         forceAndroidLocationManager: false,
         timeInterval: 0,
         timeLimit: null,
@@ -81,13 +113,21 @@ void main() {
     test(
         // ignore: lines_longer_than_80_chars
         'getPositionStream: time interval duration should be set to milliseconds.',
-        () async {
-      await Geolocator.getPositionStream(
-        intervalDuration: Duration(seconds: 10),
+        () {
+      when(GeolocatorPlatform.instance.getPositionStream(
+        desiredAccuracy: LocationAccuracy.best,
+        forceAndroidLocationManager: false,
+        timeInterval: 10000,
+        timeLimit: null,
+      )).thenAnswer((_) => Stream.value(mockPosition));
+
+      Geolocator.getPositionStream(
+        intervalDuration: const Duration(seconds: 10),
       );
 
       verify(GeolocatorPlatform.instance.getPositionStream(
         desiredAccuracy: LocationAccuracy.best,
+        distanceFilter: 0,
         forceAndroidLocationManager: false,
         timeInterval: 10000,
         timeLimit: null,
@@ -104,13 +144,13 @@ void main() {
       expect(hasOpened, true);
     });
 
-    test('distanceBetween', () async {
-      final distance = await Geolocator.distanceBetween(0, 0, 0, 0);
+    test('distanceBetween', () {
+      final distance = Geolocator.distanceBetween(0, 0, 0, 0);
       expect(distance, 42);
     });
 
-    test('bearingBetween', () async {
-      final bearing = await Geolocator.bearingBetween(0, 0, 0, 0);
+    test('bearingBetween', () {
+      final bearing = Geolocator.bearingBetween(0, 0, 0, 0);
       expect(bearing, 42);
     });
   });
@@ -143,23 +183,57 @@ class MockGeolocatorPlatform extends Mock
   Future<Position> getCurrentPosition({
     LocationAccuracy desiredAccuracy = LocationAccuracy.best,
     bool forceAndroidLocationManager = false,
-    Duration timeLimit,
+    Duration? timeLimit,
   }) =>
       Future.value(mockPosition);
 
-/*  
+  @override
+  Stream<ServiceStatus> getServiceStatusStream() {
+    return super.noSuchMethod(
+      Invocation.method(
+        #getServiceStatusStream,
+        null,
+      ),
+      returnValue: Stream.value(ServiceStatus.enabled),
+    );
+  }
+
   @override
   Stream<Position> getPositionStream({
-    LocationAccuracy desiredAccuracy = LocationAccuracy.best,
-    int distanceFilter = 0,
-    bool forceAndroidLocationManager = false,
-    int timeInterval = 0,
-    Duration timeLimit,
-  }) =>
-      Stream.value(mockPosition);
-*/
+    LocationAccuracy? desiredAccuracy = LocationAccuracy.best,
+    int? distanceFilter = 0,
+    bool? forceAndroidLocationManager = false,
+    int? timeInterval = 0,
+    Duration? timeLimit,
+  }) {
+    return super.noSuchMethod(
+      Invocation.method(
+        #getPositionStream,
+        null,
+        <Symbol, Object?>{
+          #desiredAccuracy: desiredAccuracy,
+          #distanceFilter: distanceFilter,
+          #forceAndroidLocationManager: forceAndroidLocationManager,
+          #timeInterval: timeInterval,
+          #timeLimit: timeLimit,
+        },
+      ),
+      returnValue: Stream.value(mockPosition),
+    );
+  }
+
   @override
   Future<bool> openAppSettings() => Future.value(true);
+
+  @override
+  Future<LocationAccuracyStatus> getLocationAccuracy() =>
+      Future.value(LocationAccuracyStatus.reduced);
+
+  @override
+  Future<LocationAccuracyStatus> requestTemporaryFullAccuracy({
+    required String purposeKey,
+  }) =>
+      Future.value(LocationAccuracyStatus.reduced);
 
   @override
   Future<bool> openLocationSettings() => Future.value(true);

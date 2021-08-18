@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:vector_math/vector_math.dart';
 
+import '../geolocator_platform_interface.dart';
 import 'enums/enums.dart';
 import 'implementations/method_channel_geolocator.dart';
 import 'models/models.dart';
@@ -20,7 +21,7 @@ abstract class GeolocatorPlatform extends PlatformInterface {
   /// Constructs a GeolocatorPlatform.
   GeolocatorPlatform() : super(token: _token);
 
-  static final Object _token = Object();
+  static const Object _token = Object();
 
   static GeolocatorPlatform _instance = MethodChannelGeolocator();
 
@@ -75,7 +76,7 @@ abstract class GeolocatorPlatform extends PlatformInterface {
   /// When no position is available, null is returned.
   /// Throws a [PermissionDeniedException] when trying to request the device's
   /// location when the user denied access.
-  Future<Position> getLastKnownPosition({
+  Future<Position?> getLastKnownPosition({
     bool forceAndroidLocationManager = false,
   }) {
     throw UnimplementedError(
@@ -102,9 +103,17 @@ abstract class GeolocatorPlatform extends PlatformInterface {
   Future<Position> getCurrentPosition({
     LocationAccuracy desiredAccuracy = LocationAccuracy.best,
     bool forceAndroidLocationManager = false,
-    Duration timeLimit,
+    Duration? timeLimit,
   }) {
     throw UnimplementedError('getCurrentPosition() has not been implemented.');
+  }
+
+  /// Fires when the Location Service is manually disabled or enabled f.e.
+  /// when Location Service in Settings is disabled, a event will be fired which
+  /// returns a [LocationServiceStatus].
+  Stream<ServiceStatus> getServiceStatusStream() {
+    throw UnimplementedError(
+        'getServiceStatusStream() has not been implemented.');
   }
 
   /// Fires whenever the location changes inside the bounds of the
@@ -146,9 +155,43 @@ abstract class GeolocatorPlatform extends PlatformInterface {
     int distanceFilter = 0,
     bool forceAndroidLocationManager = false,
     int timeInterval = 0,
-    Duration timeLimit,
+    Duration? timeLimit,
   }) {
     throw UnimplementedError('getPositionStream() has not been implemented.');
+  }
+
+  /// Asks the user for Temporary Precise location access (iOS 14 or above).
+  ///
+  /// Returns [LocationAccuracyStatus.precise] if the user already gave
+  /// permission to use Precise Accuracy. If the user uses iOS 13 or below,
+  /// [LocationAccuracyStatus.precise] will also be returned. On other platforms
+  /// an PlatformException will be thrown.
+  ///
+  /// The `required` property [purposeKey] should correspond with the [key]
+  /// value set in the [NSLocationTemporaryUsageDescriptionDictionary]
+  /// dictionary, which should be added to the `Info.plist` as stated in the
+  /// [documentation](https://developer.apple.com/documentation/bundleresources/information_property_list/nslocationtemporaryusagedescriptiondictionary).
+  ///
+  /// Throws a [PermissionDefinitionsNotFoundException] when the key
+  /// `NSLocationTemporaryUsageDescriptionDictionary` has not been set in the
+  /// `Infop.list`.
+  Future<LocationAccuracyStatus> requestTemporaryFullAccuracy({
+    required String purposeKey,
+  }) async {
+    throw UnimplementedError(
+        'requestTemporaryFullAccuracy() has not been implemented');
+  }
+
+  /// Returns a [Future] containing a [LocationAccuracyStatus].
+  ///
+  /// When on iOS the user has given permission for approximate location,
+  /// [LocationAccuracyStatus.reduced] will be returned, if the user gave
+  /// permission for precise/full accuracy location, [LocationAccuracyStatus.precise]
+  /// will be returned.
+  /// When executing the method on platforms that don't support location
+  /// accuracy features [LocationAccuracyStatus.unknown] should be returned.
+  Future<LocationAccuracyStatus> getLocationAccuracy() async {
+    throw UnimplementedError('getLocationAccuracy() has not been implemented.');
   }
 
   /// Opens the App settings page.

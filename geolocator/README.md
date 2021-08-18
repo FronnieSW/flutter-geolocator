@@ -1,6 +1,6 @@
 # Flutter Geolocator Plugin  
 
-[![pub package](https://img.shields.io/pub/v/geolocator.svg)](https://pub.dartlang.org/packages/geolocator) ![Geolocator](https://github.com/Baseflow/flutter-geolocator/workflows/Geolocator/badge.svg?branch=master) [![style: effective dart](https://img.shields.io/badge/style-effective_dart-40c4ff.svg)](https://github.com/tenhobi/effective_dart) [![codecov](https://codecov.io/gh/Baseflow/flutter-geolocator/branch/master/graph/badge.svg)](https://codecov.io/gh/Baseflow/flutter-geolocator)
+[![pub package](https://img.shields.io/pub/v/geolocator.svg)](https://pub.dartlang.org/packages/geolocator) ![Build status](https://github.com/Baseflow/flutter-geolocator/workflows/geolocator/badge.svg?branch=master) [![style: effective dart](https://img.shields.io/badge/style-effective_dart-40c4ff.svg)](https://github.com/tenhobi/effective_dart) [![codecov](https://codecov.io/gh/Baseflow/flutter-geolocator/branch/master/graph/badge.svg)](https://codecov.io/gh/Baseflow/flutter-geolocator)
 
 A Flutter geolocation plugin which provides easy access to platform specific location services ([FusedLocationProviderClient](https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderClient) or if not available the [LocationManager](https://developer.android.com/reference/android/location/LocationManager) on Android and [CLLocationManager](https://developer.apple.com/documentation/corelocation/cllocationmanager) on iOS).
 
@@ -14,7 +14,9 @@ A Flutter geolocation plugin which provides easy access to platform specific loc
 * Calculate the bearing between two geocoordinates;
 
 > **IMPORTANT:**
->
+> 
+> Version 7.0.0 of the geolocator plugin contains several breaking changes, for a complete overview please have a look at the [Breaking changes in 7.0.0](https://github.com/Baseflow/flutter-geolocator/wiki/Breaking-changes-in-7.0.0) wiki page.
+> 
 > Starting from version 6.0.0 the geocoding features (`placemarkFromAddress` and `placemarkFromCoordinates`) are no longer part of the geolocator plugin. We have moved these features to their own plugin: [geocoding](https://pub.dev/packages/geocoding). This new plugin is an improved version of the old methods.
 
 ## Usage
@@ -49,11 +51,11 @@ android {
   ...
 }
 ```
-3. Make sure you replace all the `android.` dependencies to their AndroidX counterparts (a full list can be found here: https://developer.android.com/jetpack/androidx/migrate).
+3. Make sure you replace all the `android.` dependencies to their AndroidX counterparts (a full list can be found here: [Migrating to AndroidX](https://developer.android.com/jetpack/androidx/migrate)).
 
 **Permissions**
 
-On Android you'll need to add either the `ACCESS_COARSE_LOCATION` or the `ACCESS_FINE_LOCATION` permission to your Android Manifest. To do so open the AndroidManifest.xml file (located under android/app/src/main) and add one of the following two lines as direct children of the `<manifest>` tag (when you configure both permissions the `ACCESS_FINE_LOCATION` will be used be the geolocator plugin):
+On Android you'll need to add either the `ACCESS_COARSE_LOCATION` or the `ACCESS_FINE_LOCATION` permission to your Android Manifest. To do so open the AndroidManifest.xml file (located under android/app/src/main) and add one of the following two lines as direct children of the `<manifest>` tag (when you configure both permissions the `ACCESS_FINE_LOCATION` will be used by the geolocator plugin):
 
 ``` xml
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -85,6 +87,30 @@ On iOS you'll need to add the following entries to your Info.plist file (located
 
 If you would like to receive updates when your App is in the background, you'll also need to add the Background Modes capability to your XCode project (Project > Signing and Capabilities > "+ Capability" button) and select Location Updates. Be careful with this, you will need to explain in detail to Apple why your App needs this when submitting your App to the AppStore. If Apple isn't satisfied with the explanation your App will be rejected.
 
+When using the `requestTemporaryFullAccuracy({purposeKey: "YourPurposeKey"})` method, a dictionary should be added to the Info.plist file.
+```xml
+<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+<dict>
+  <key>YourPurposeKey</key>
+  <string>The example App requires temporary access to the device&apos;s precise location.</string>
+</dict>
+```
+The second key (in this example called `YourPurposeKey`) should match the purposeKey that is passed in the `requestTemporaryFullAccuracy()` method. It is possible to define multiple keys for different features in your app. More information can be found in Apple's [documentation](https://developer.apple.com/documentation/bundleresources/information_property_list/nslocationtemporaryusagedescriptiondictionary).
+
+> NOTE: the first time requesting temporary full accuracy access it might take several seconds for the pop-up to show. This is due to the fact that iOS is determining the exact user location and may take several seconds. Unfortunately this is out of our hands.
+</details>
+
+<details>
+<summary>Web</summary>
+
+To use the Geolocator plugin on the web you need to be using Flutter 1.20 or higher. Flutter will automatically add the endorsed [geolocator_web]() package to your application when you add the `geolocator: ^6.2.0` dependency to your `pubspec.yaml`.
+
+Note that the following methods of the geolocator API are not supported on the web and will result in a `PlatformException` with the code `UNSUPPORTED_OPERATION`:
+
+- `getLastKnownPosition({ bool forceAndroidLocationManager = true })`
+- `openAppSettings()`
+- `openLocationSettings()`
+
 </details>
 
 ### Example
@@ -102,26 +128,36 @@ Future<Position> _determinePosition() async {
   bool serviceEnabled;
   LocationPermission permission;
 
+  // Test if location services are enabled.
   serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
+    // Location services are not enabled don't continue
+    // accessing the position and request users of the 
+    // App to enable the location services.
     return Future.error('Location services are disabled.');
   }
 
   permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.deniedForever) {
-    return Future.error(
-        'Location permissions are permantly denied, we cannot request permissions.');
-  }
-
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
-    if (permission != LocationPermission.whileInUse &&
-        permission != LocationPermission.always) {
-      return Future.error(
-          'Location permissions are denied (actual value: $permission).');
+    if (permission == LocationPermission.denied) {
+      // Permissions are denied, next time you could try
+      // requesting permissions again (this is also where
+      // Android's shouldShowRequestPermissionRationale 
+      // returned true. According to Android guidelines
+      // your App should show an explanatory UI now.
+      return Future.error('Location permissions are denied');
     }
   }
+  
+  if (permission == LocationPermission.deniedForever) {
+    // Permissions are denied forever, handle appropriately. 
+    return Future.error(
+      'Location permissions are permanently denied, we cannot request permissions.');
+  } 
 
+  // When we reach here, permissions are granted and we can
+  // continue accessing the position of the device.
   return await Geolocator.getCurrentPosition();
 }
 ```
@@ -163,6 +199,28 @@ StreamSubscription<Position> positionStream = Geolocator.getPositionStream(locat
     (Position position) {
         print(position == null ? 'Unknown' : position.latitude.toString() + ', ' + position.longitude.toString());
     });
+```
+
+To listen for service status changes you can call the `getServiceStatusStream`. This will return a `Stream<ServiceStatus>` which can be listened to, to receive location service status updates.
+
+``` dart
+import 'package:geolocator/geolocator.dart';
+
+StreamSubscription<ServiceStatus> serviceStatusStream = Geolocator.getServiceStatusStream().listen(
+    (ServiceStatus status) {
+        print(status);
+    });
+```
+
+**iOS 14+ only**
+To query if a user enabled Approximate location fetching or Precise location fetching, you can call the `Geolocator().getLocationAccuracy()` method. This will return a `Future<LocationAccuracyStatus>`, which when completed contains a `LocationAccuracyStatus.reduced` if the user has enabled Approximate location fetching or `LocationAccuracyStatus.precise` if the user has enabled Precise location fetching.
+When calling `getLocationAccuracy` before the user has given permission, the method will return `LocationAccuracyStatus.reduced` by default.
+On iOS 13 or below, the method `getLocationAccuracy` will always return `LocationAccuracyStatus.precise`, since that is the default value for iOS 13 and below.
+
+``` dart
+import 'package:geolocator/geolocator.dart';
+
+var accuracy = await Geolocator.getLocationAccuracy();
 ```
 
 To check if location services are enabled you can call the `isLocationServiceEnabled` method:
@@ -268,7 +326,7 @@ Please file any issues, bugs or feature requests as an issue on our [GitHub](htt
 
 ## Want to contribute
 
-If you would like to contribute to the plugin (e.g. by improving the documentation, solving a bug or adding a cool new feature), please carefully review our [contribution guide](CONTRIBUTING.md) and send us your [pull request](https://github.com/Baseflow/flutter-geolocator/pulls).
+If you would like to contribute to the plugin (e.g. by improving the documentation, solving a bug or adding a cool new feature), please carefully review our [contribution guide](../CONTRIBUTING.md) and send us your [pull request](https://github.com/Baseflow/flutter-geolocator/pulls).
 
 ## Author
 

@@ -12,6 +12,7 @@
 .svn/
 bin/
 coverage/
+.fvm/
 
 # IntelliJ related
 *.iml
@@ -89,6 +90,11 @@ flutter_export_environment.sh
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
 **/ios/Flutter/Flutter.podspec
+
+# Firebase related
+.firebase/
+.firebaserc
+firebase.json
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3
