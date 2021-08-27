@@ -146,9 +146,9 @@ class MethodChannelGeolocator extends GeolocatorPlatform {
         .map((dynamic element) => ServiceStatus.values[element as int])
         .handleError((error) {
       _serviceStatusStream = null;
-      if (error is PlatformException) {
-        _handlePlatformException(error);
-      }
+      // if (error is PlatformException) {
+      //   _handlePlatformException(error);
+      // }
       throw error;
     });
 

@@ -10,8 +10,47 @@ final MaterialColor themeMaterialColor =
     BaseflowPluginExample.createMaterialColor(
         const Color.fromRGBO(48, 49, 60, 1));
 
+class Dunno extends StatefulWidget {
+  const Dunno({Key? key}) : super(key: key);
+
+  @override
+  _DunnoState createState() => _DunnoState();
+}
+
+initGeolocator()async{
+  GeolocatorPlatform.instance.getServiceStatusStream()
+  GeolocatorPlatform.instance.getPositionStream(
+      distanceFilter: 1, timeInterval: 1000,
+  ).listen((date) { }, onError: (value) => {
+    print(value)
+  });
+  print("locator inited");
+}
+
+class _DunnoState extends State<Dunno> {
+  @override
+  void initState() {
+    initGeolocator();
+    super.initState();
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      builder: (context, widget){
+        return Container(
+          height: MediaQuery.of(context).size.height,
+          width: MediaQuery.of(context).size.width,
+          color: Colors.amberAccent,
+        );
+      },
+    );
+  }
+}
+
 void main() {
-  runApp(const GeolocatorWidget());
+  runApp(const Dunno());
 }
 
 /// Example [Widget] showing the functionalities of the geolocator plugin
