@@ -31,7 +31,7 @@ class GeolocatorWidget extends StatefulWidget {
 
 class _GeolocatorWidgetState extends State<GeolocatorWidget> {
   final List<_PositionItem> _positionItems = <_PositionItem>[];
-  StreamSubscription<Position> _positionStreamSubscription;
+  StreamSubscription<Position>? _positionStreamSubscription;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +67,14 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
       floatingActionButton: Stack(
         children: <Widget>[
           Positioned(
+            bottom: 10.0,
+            right: 10.0,
+            child: FloatingActionButton.extended(
+              onPressed: () => setState(_positionItems.clear),
+              label: Text("clear"),
+            ),
+          ),
+          Positioned(
             bottom: 80.0,
             right: 10.0,
             child: FloatingActionButton.extended(
@@ -80,11 +88,11 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
                   () {},
                 );
               },
-              label: Text("getLastKnownPosition"),
+              label: Text("Last Position"),
             ),
           ),
           Positioned(
-            bottom: 10.0,
+            bottom: 150.0,
             right: 10.0,
             child: FloatingActionButton.extended(
                 onPressed: () async {
@@ -97,30 +105,25 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
                     () {},
                   );
                 },
-                label: Text("getCurrentPosition")),
-          ),
-          Positioned(
-            bottom: 150.0,
-            right: 10.0,
-            child: FloatingActionButton.extended(
-              onPressed: _toggleListening,
-              label: Text(() {
-                if (_positionStreamSubscription == null) {
-                  return "getPositionStream = null";
-                } else {
-                  return "getPositionStream ="
-                      " ${_positionStreamSubscription.isPaused ? "off" : "on"}";
-                }
-              }()),
-              backgroundColor: _determineButtonColor(),
-            ),
+                label: Text("Current Position")),
           ),
           Positioned(
             bottom: 220.0,
             right: 10.0,
             child: FloatingActionButton.extended(
-              onPressed: () => setState(_positionItems.clear),
-              label: Text("clear positions"),
+              onPressed: _toggleListening,
+              label: Text(() {
+                if (_positionStreamSubscription == null) {
+                  return "Start stream";
+                } else {
+                  final buttonText = _positionStreamSubscription!.isPaused
+                      ? "Resume"
+                      : "Pause";
+
+                  return "$buttonText stream";
+                }
+              }()),
+              backgroundColor: _determineButtonColor(),
             ),
           ),
           Positioned(
@@ -134,7 +137,21 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
                     });
                 setState(() {});
               },
-              label: Text("getPermissionStatus"),
+              label: Text("Check Permission"),
+            ),
+          ),
+          Positioned(
+            bottom: 360.0,
+            right: 10.0,
+            child: FloatingActionButton.extended(
+              onPressed: () async {
+                await Geolocator.requestPermission().then((value) => {
+                      _positionItems.add(_PositionItem(
+                          _PositionItemType.permission, value.toString()))
+                    });
+                setState(() {});
+              },
+              label: Text("Request Permission"),
             ),
           ),
         ],
@@ -143,7 +160,7 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
   }
 
   bool _isListening() => !(_positionStreamSubscription == null ||
-      _positionStreamSubscription.isPaused);
+      _positionStreamSubscription!.isPaused);
 
   Color _determineButtonColor() {
     return _isListening() ? Colors.green : Colors.red;
@@ -153,18 +170,22 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
     if (_positionStreamSubscription == null) {
       final positionStream = Geolocator.getPositionStream();
       _positionStreamSubscription = positionStream.handleError((error) {
-        _positionStreamSubscription.cancel();
+        _positionStreamSubscription?.cancel();
         _positionStreamSubscription = null;
       }).listen((position) => setState(() => _positionItems.add(
           _PositionItem(_PositionItemType.position, position.toString()))));
-      _positionStreamSubscription.pause();
+      _positionStreamSubscription?.pause();
     }
 
     setState(() {
-      if (_positionStreamSubscription.isPaused) {
-        _positionStreamSubscription.resume();
+      if (_positionStreamSubscription == null) {
+        return;
+      }
+
+      if (_positionStreamSubscription!.isPaused) {
+        _positionStreamSubscription!.resume();
       } else {
-        _positionStreamSubscription.pause();
+        _positionStreamSubscription!.pause();
       }
     });
   }
@@ -172,7 +193,7 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
   @override
   void dispose() {
     if (_positionStreamSubscription != null) {
-      _positionStreamSubscription.cancel();
+      _positionStreamSubscription!.cancel();
       _positionStreamSubscription = null;
     }
 

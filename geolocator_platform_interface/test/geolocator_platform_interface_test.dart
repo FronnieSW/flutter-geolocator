@@ -1,6 +1,7 @@
 // Copyright 2019 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
 import 'package:geolocator_platform_interface/src/implementations/method_channel_geolocator.dart';
@@ -96,6 +97,20 @@ void main() {
       // Act & Assert
       expect(
         geolocatorPlatform.getLastKnownPosition,
+        throwsUnimplementedError,
+      );
+    });
+
+    test(
+        // ignore: lines_longer_than_80_chars
+        'Default implementation of getServiceStatusStream should throw unimplemented error',
+        () {
+      // Arrange
+      final geolocatorPlatform = ExtendsGeolocatorPlatform();
+
+      // Act & Assert
+      expect(
+        geolocatorPlatform.getServiceStatusStream,
         throwsUnimplementedError,
       );
     });

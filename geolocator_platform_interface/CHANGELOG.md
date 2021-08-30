@@ -1,3 +1,31 @@
+## 2.1.0
+
+- Added the possibility to start a stream which will return an event when Location Services are manually enabled/disabled
+
+## 2.0.2
+
+- Added definition of the `ActivityMissingException`.
+
+## 2.0.1
+
+- Resolved analyzer error when using mockito (see issue [#709](https://github.com/Baseflow/flutter-geolocator/issues/709)).
+
+## 2.0.0
+
+- Stable release for null safety.
+
+## 2.0.0-nullsafety.1
+
+- Merged version 1.0.9 into null safety.
+
+## 2.0.0-nullsafety.0
+
+- Migrated to support null safety.
+
+## 1.0.9
+
+- Updated the README.md to more clearly explain the purpose of the geolocator_platform_interface package.
+
 ## 1.0.8
 
 - Added the optional floor property to the position model and can be used by implementations to specify the floor on which the device is located (see [#562](https://github.com/Baseflow/flutter-geolocator/issues/562)).

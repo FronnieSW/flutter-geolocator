@@ -1,6 +1,6 @@
 # Flutter Geolocator Plugin  
 
-[![pub package](https://img.shields.io/pub/v/geolocator.svg)](https://pub.dartlang.org/packages/geolocator) ![Geolocator](https://github.com/Baseflow/flutter-geolocator/workflows/Geolocator/badge.svg?branch=master) [![style: effective dart](https://img.shields.io/badge/style-effective_dart-40c4ff.svg)](https://github.com/tenhobi/effective_dart) [![codecov](https://codecov.io/gh/Baseflow/flutter-geolocator/branch/master/graph/badge.svg)](https://codecov.io/gh/Baseflow/flutter-geolocator)
+[![pub package](https://img.shields.io/pub/v/geolocator.svg)](https://pub.dartlang.org/packages/geolocator) ![Build status](https://github.com/Baseflow/flutter-geolocator/workflows/app_facing_package/badge.svg?branch=master) [![style: effective dart](https://img.shields.io/badge/style-effective_dart-40c4ff.svg)](https://github.com/tenhobi/effective_dart) [![codecov](https://codecov.io/gh/Baseflow/flutter-geolocator/branch/master/graph/badge.svg)](https://codecov.io/gh/Baseflow/flutter-geolocator)
 
 A Flutter geolocation plugin which provides easy access to platform specific location services ([FusedLocationProviderClient](https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderClient) or if not available the [LocationManager](https://developer.android.com/reference/android/location/LocationManager) on Android and [CLLocationManager](https://developer.apple.com/documentation/corelocation/cllocationmanager) on iOS).
 
@@ -14,7 +14,9 @@ A Flutter geolocation plugin which provides easy access to platform specific loc
 * Calculate the bearing between two geocoordinates;
 
 > **IMPORTANT:**
->
+> 
+> Version 7.0.0 of the geolocator plugin contains several breaking changes, for a complete overview please have a look at the [Breaking changes in 7.0.0](https://github.com/Baseflow/flutter-geolocator/wiki/Breaking-changes-in-7.0.0) wiki page.
+> 
 > Starting from version 6.0.0 the geocoding features (`placemarkFromAddress` and `placemarkFromCoordinates`) are no longer part of the geolocator plugin. We have moved these features to their own plugin: [geocoding](https://pub.dev/packages/geocoding). This new plugin is an improved version of the old methods.
 
 ## Usage
@@ -53,7 +55,7 @@ android {
 
 **Permissions**
 
-On Android you'll need to add either the `ACCESS_COARSE_LOCATION` or the `ACCESS_FINE_LOCATION` permission to your Android Manifest. To do so open the AndroidManifest.xml file (located under android/app/src/main) and add one of the following two lines as direct children of the `<manifest>` tag (when you configure both permissions the `ACCESS_FINE_LOCATION` will be used be the geolocator plugin):
+On Android you'll need to add either the `ACCESS_COARSE_LOCATION` or the `ACCESS_FINE_LOCATION` permission to your Android Manifest. To do so open the AndroidManifest.xml file (located under android/app/src/main) and add one of the following two lines as direct children of the `<manifest>` tag (when you configure both permissions the `ACCESS_FINE_LOCATION` will be used by the geolocator plugin):
 
 ``` xml
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -87,6 +89,19 @@ If you would like to receive updates when your App is in the background, you'll 
 
 </details>
 
+<details>
+<summary>Web</summary>
+
+To use the Geolocator plugin on the web you need to be using Flutter 1.20 or higher. Flutter will automatically add the endorsed [geolocator_web]() package to your application when you add the `geolocator: ^6.2.0` dependency to your `pubspec.yaml`.
+
+Note that the following methods of the geolocator API are not supported on the web and will result in a `PlatformException` with the code `UNSUPPORTED_OPERATION`:
+
+- `getLastKnownPosition({ bool forceAndroidLocationManager = true })`
+- `openAppSettings()`
+- `openLocationSettings()`
+
+</details>
+
 ### Example
 
 The code below shows an example on how to acquire the current position of the device, including checking if the location services are enabled and checking / requesting permission to access the position of the device:
@@ -102,26 +117,36 @@ Future<Position> _determinePosition() async {
   bool serviceEnabled;
   LocationPermission permission;
 
+  // Test if location services are enabled.
   serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
+    // Location services are not enabled don't continue
+    // accessing the position and request users of the 
+    // App to enable the location services.
     return Future.error('Location services are disabled.');
   }
 
   permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.deniedForever) {
-    return Future.error(
-        'Location permissions are permantly denied, we cannot request permissions.');
-  }
-
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
-    if (permission != LocationPermission.whileInUse &&
-        permission != LocationPermission.always) {
-      return Future.error(
-          'Location permissions are denied (actual value: $permission).');
+    if (permission == LocationPermission.denied) {
+      // Permissions are denied, next time you could try
+      // requesting permissions again (this is also where
+      // Android's shouldShowRequestPermissionRationale 
+      // returned true. According to Android guidelines
+      // your App should show an explanatory UI now.
+      return Future.error('Location permissions are denied');
     }
   }
+  
+  if (permission == LocationPermission.deniedForever) {
+    // Permissions are denied forever, handle appropriately. 
+    return Future.error(
+      'Location permissions are permanently denied, we cannot request permissions.');
+  } 
 
+  // When we reach here, permissions are granted and we can
+  // continue accessing the position of the device.
   return await Geolocator.getCurrentPosition();
 }
 ```
@@ -268,7 +293,7 @@ Please file any issues, bugs or feature requests as an issue on our [GitHub](htt
 
 ## Want to contribute
 
-If you would like to contribute to the plugin (e.g. by improving the documentation, solving a bug or adding a cool new feature), please carefully review our [contribution guide](CONTRIBUTING.md) and send us your [pull request](https://github.com/Baseflow/flutter-geolocator/pulls).
+If you would like to contribute to the plugin (e.g. by improving the documentation, solving a bug or adding a cool new feature), please carefully review our [contribution guide](../CONTRIBUTING.md) and send us your [pull request](https://github.com/Baseflow/flutter-geolocator/pulls).
 
 ## Author
 
