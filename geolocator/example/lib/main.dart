@@ -6,8 +6,8 @@ import 'package:geolocator/geolocator.dart';
 
 /// Defines the main theme color.
 final MaterialColor themeMaterialColor =
-    BaseflowPluginExample.createMaterialColor(
-        const Color.fromRGBO(48, 49, 60, 1));
+BaseflowPluginExample.createMaterialColor(
+    const Color.fromRGBO(48, 49, 60, 1));
 
 void main() {
   runApp(BaseflowPluginExample(
@@ -32,6 +32,15 @@ class GeolocatorWidget extends StatefulWidget {
 class _GeolocatorWidgetState extends State<GeolocatorWidget> {
   final List<_PositionItem> _positionItems = <_PositionItem>[];
   StreamSubscription<Position>? _positionStreamSubscription;
+
+  @override
+  void initState() {
+    GeolocatorPlatform.instance
+        .getPositionStream()
+        .listen((data) => print(data), onError: (value) {
+      print(value);
+    });    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,12 +89,12 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
             child: FloatingActionButton.extended(
               onPressed: () async {
                 await Geolocator.getLastKnownPosition().then((value) => {
-                      _positionItems.add(_PositionItem(
-                          _PositionItemType.position, value.toString()))
-                    });
+                  _positionItems.add(_PositionItem(
+                      _PositionItemType.position, value.toString()))
+                });
 
                 setState(
-                  () {},
+                      () {},
                 );
               },
               label: Text("Last Position"),
@@ -97,12 +106,12 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
             child: FloatingActionButton.extended(
                 onPressed: () async {
                   await Geolocator.getCurrentPosition().then((value) => {
-                        _positionItems.add(_PositionItem(
-                            _PositionItemType.position, value.toString()))
-                      });
+                    _positionItems.add(_PositionItem(
+                        _PositionItemType.position, value.toString()))
+                  });
 
                   setState(
-                    () {},
+                        () {},
                   );
                 },
                 label: Text("Current Position")),
@@ -132,9 +141,9 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
             child: FloatingActionButton.extended(
               onPressed: () async {
                 await Geolocator.checkPermission().then((value) => {
-                      _positionItems.add(_PositionItem(
-                          _PositionItemType.permission, value.toString()))
-                    });
+                  _positionItems.add(_PositionItem(
+                      _PositionItemType.permission, value.toString()))
+                });
                 setState(() {});
               },
               label: Text("Check Permission"),
@@ -146,9 +155,9 @@ class _GeolocatorWidgetState extends State<GeolocatorWidget> {
             child: FloatingActionButton.extended(
               onPressed: () async {
                 await Geolocator.requestPermission().then((value) => {
-                      _positionItems.add(_PositionItem(
-                          _PositionItemType.permission, value.toString()))
-                    });
+                  _positionItems.add(_PositionItem(
+                      _PositionItemType.permission, value.toString()))
+                });
                 setState(() {});
               },
               label: Text("Request Permission"),
@@ -212,3 +221,4 @@ class _PositionItem {
   final _PositionItemType type;
   final String displayValue;
 }
+
